@@ -1,107 +1,162 @@
+/* App.css */
 body {
-  background-color: #f0f2f5;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
-  padding: 20px;
+  background-color: #f4f7f6;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: #333;
 }
 
-.container {
+.app-container {
   max-width: 600px;
   margin: 0 auto;
-  text-align: center;
-  background: white;
   padding: 20px;
-  border-radius: 15px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  text-align: center;
 }
 
-h1 { color: #333; }
+.header h1 {
+  margin-bottom: 5px;
+  color: #2c3e50;
+  font-size: 1.8rem;
+}
 
+.header p {
+  color: #7f8c8d;
+  margin-top: 0;
+}
+
+/* --- Buttons --- */
 .controls {
   display: flex;
   justify-content: center;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 15px;
+  margin-bottom: 25px;
 }
 
 .btn {
-  padding: 10px 20px;
+  padding: 12px 24px;
   border: none;
-  border-radius: 8px;
+  border-radius: 30px;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  font-weight: bold;
-  font-size: 16px;
-  transition: 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
-.primary { background-color: #007bff; color: white; }
-.secondary { background-color: #6c757d; color: white; }
-.capture-btn { background-color: #28a745; color: white; width: 100%; margin-top: 10px;}
+.btn:active {
+  transform: scale(0.95);
+}
 
-.btn:hover { opacity: 0.9; }
+.btn-primary {
+  background: linear-gradient(135deg, #00b4ff, #007bff);
+  color: white;
+}
 
-.camera-container {
+.btn-secondary {
+  background-color: white;
+  color: #555;
+  border: 1px solid #ddd;
+}
+
+.btn-capture {
+  width: 100%;
+  margin-top: 15px;
+  background-color: #27ae60;
+  color: white;
+  padding: 15px;
+}
+
+/* --- Camera --- */
+.camera-wrapper {
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.15);
   margin-bottom: 20px;
 }
 
-.preview-image {
+/* --- Results Area --- */
+.result-card {
+  background: white;
+  padding: 15px;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+.image-container {
+  position: relative;
   width: 100%;
-  border-radius: 10px;
-  border: 2px solid #ddd;
-}
-
-.loading {
-  font-size: 18px;
-  color: #007bff;
-  font-weight: bold;
-  margin-top: 20px;
-}
-
-.predictions-list {
-  text-align: left;
-  margin-top: 20px;
-}
-
-.prediction-item {
-  display: flex;
-  justify-content: space-between;
-  background: #f8f9fa;
-  padding: 10px;
-  margin-bottom: 5px;
-  border-left: 5px solid #007bff;
-  border-radius: 4px;
-}
-
-.class-name { font-weight: bold; text-transform: uppercase; }
-.confidence { color: #666; }
-
-
-/* Keep your existing CSS, but ADD/UPDATE these specific classes */
-
-.result-container {
-  margin-top: 20px;
-  position: relative; /* Container needs to be relative */
-  display: inline-block; /* Fits the content */
-}
-
-.image-wrapper {
-  position: relative; /* Keeps image and canvas together */
-  width: 100%;
-  max-width: 640px; /* Or whatever max width you want */
+  border-radius: 12px;
+  overflow: hidden;
+  font-size: 0; /* Removes gap below image */
 }
 
 .preview-image {
-  display: block;
-  width: 100%; /* Responsive width */
+  width: 100%;
   height: auto;
-  border-radius: 10px;
+  display: block;
 }
 
 .drawing-canvas {
-  position: absolute; /* Sits on top of image */
+  position: absolute;
   top: 0;
   left: 0;
-  width: 100%; /* Matches Image Width */
-  height: 100%; /* Matches Image Height */
-  pointer-events: none; /* Allows clicking through the canvas if needed */
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* --- Stats & Tags --- */
+.stats-panel {
+  text-align: left;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+.stats-panel h3 {
+  margin: 0 0 10px 0;
+  font-size: 1rem;
+  color: #555;
+}
+
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  background-color: #e3f2fd;
+  color: #0277bd;
+  padding: 6px 12px;
+  border-radius: 15px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.tag small {
+  opacity: 0.7;
+  margin-left: 5px;
+}
+
+/* --- Loading Spinner --- */
+.loading-container {
+  margin: 30px 0;
+  color: #007bff;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 10px auto;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
