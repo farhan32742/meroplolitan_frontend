@@ -14,18 +14,27 @@ function App() {
   const imgRef = useRef(null);
   const canvasRef = useRef(null);
 
-  // Resize image for faster upload
-  const resizeImage = (file, maxWidth = 800) => {
+  // 1. Resize Image Logic
+  // CHANGED: maxWidth is now 640 to match YOLOv8 native size for best speed/accuracy
+  const resizeImage = (file, maxWidth = 640) => {
     return new Promise((resolve) => {
       const img = document.createElement("img");
-      img.src = URL.createObjectURL(file);
+      const url = URL.createObjectURL(file); // Create URL from file
+      img.src = url;
+      
       img.onload = () => {
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
         const scale = maxWidth / img.width;
+        
+        // Set new dimensions
         canvas.width = maxWidth;
         canvas.height = img.height * scale;
+        
+        // Draw resized image
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        // Convert back to file
         canvas.toBlob((blob) => {
           const resizedFile = new File([blob], file.name, { type: "image/jpeg" });
           resolve(resizedFile);
@@ -34,37 +43,55 @@ function App() {
     });
   };
 
+  // 2. Handle Gallery Upload
   const handleFileChange = async (event) => {
     const file = event.target.files[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      setImageSrc(url);
-      setPredictions([]);
+      setLoading(true);
+      setPredictions([]); // Clear old boxes
+
+      // A. Resize FIRST
       const resizedFile = await resizeImage(file);
+      
+      // B. Display the RESIZED image (Fixes the coordinate mismatch)
+      const resizedUrl = URL.createObjectURL(resizedFile);
+      setImageSrc(resizedUrl);
+      
+      // C. Send the RESIZED image
       sendImageToApi(resizedFile);
     }
   };
 
+  // 3. Handle Camera Capture
   const capture = useCallback(async () => {
     const screenshot = webcamRef.current.getScreenshot();
-    setImageSrc(screenshot);
     setIsCameraOpen(false);
+    setLoading(true);
     setPredictions([]);
 
+    // Convert base64 screenshot to File
     const res = await fetch(screenshot);
     const blob = await res.blob();
     const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
+    
+    // A. Resize FIRST
     const resizedFile = await resizeImage(file);
+
+    // B. Display the RESIZED image
+    const resizedUrl = URL.createObjectURL(resizedFile);
+    setImageSrc(resizedUrl);
+
+    // C. Send the RESIZED image
     sendImageToApi(resizedFile);
   }, [webcamRef]);
 
+  // 4. Send to Backend
   const sendImageToApi = async (file) => {
-    setLoading(true);
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-      // REPLACE WITH YOUR HUGGING FACE URL
+      // Make sure this URL is correct for your Space
       const response = await axios.post(
         "https://farikhan-metropolitan-logistics.hf.space/predict",
         formData,
@@ -73,29 +100,28 @@ function App() {
       setPredictions(response.data.detections);
     } catch (error) {
       console.error(error);
-      alert("Error processing image");
+      alert("Error connecting to server. Is the Hugging Face space running?");
     } finally {
       setLoading(false);
     }
   };
 
-  // --- PROFESSIONAL DRAWING LOGIC ---
+  // 5. Draw Boxes on Canvas
   useEffect(() => {
     const img = imgRef.current;
     const canvas = canvasRef.current;
 
     if (img && canvas && predictions.length > 0) {
-      // 1. Set Canvas size to match High-Res Image
+      // Match canvas size to image size
       canvas.width = img.naturalWidth;
       canvas.height = img.naturalHeight;
       const ctx = canvas.getContext("2d");
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // 2. Calculate Dynamic Sizes based on Image Width
-      // This ensures text is readable on 4K images AND thumbnails
+      // Dynamic scaling for text/lines based on image width
       const scaleFactor = Math.max(1, img.naturalWidth / 600); 
       const lineWidth = Math.max(3, 4 * scaleFactor);
-      const fontSize = Math.max(16, 24 * scaleFactor);
+      const fontSize = Math.max(14, 20 * scaleFactor);
       const padding = 6 * scaleFactor;
 
       predictions.forEach((pred) => {
@@ -103,34 +129,33 @@ function App() {
         const width = x2 - x1;
         const height = y2 - y1;
 
-        // A. Draw Semi-Transparent Fill (Glass effect)
-        ctx.fillStyle = "rgba(0, 180, 255, 0.15)"; 
+        // Draw Box Fill
+        ctx.fillStyle = "rgba(0, 180, 255, 0.2)"; 
         ctx.fillRect(x1, y1, width, height);
 
-        // B. Draw Border
-        ctx.strokeStyle = "#00b4ff"; // Bright Blue
+        // Draw Box Border
+        ctx.strokeStyle = "#00b4ff"; 
         ctx.lineWidth = lineWidth;
         ctx.strokeRect(x1, y1, width, height);
 
-        // C. Prepare Text
+        // Prepare Text
         const text = `${pred.class_name.toUpperCase()} ${(pred.confidence * 100).toFixed(0)}%`;
         ctx.font = `bold ${fontSize}px "Segoe UI", Arial, sans-serif`;
         const textWidth = ctx.measureText(text).width;
         const textHeight = fontSize * 1.2;
 
-        // D. Draw Label Background (Pill shape)
-        ctx.fillStyle = "#00b4ff";
-        // Check if label fits above, otherwise draw inside
+        // Draw Label Background
         const labelY = y1 - textHeight > 0 ? y1 - textHeight : y1;
-        
+        ctx.fillStyle = "#00b4ff";
         ctx.fillRect(x1, labelY, textWidth + (padding * 2), textHeight);
 
-        // E. Draw Text
-        ctx.fillStyle = "#FFFFFF"; // White text
+        // Draw Label Text
+        ctx.fillStyle = "#FFFFFF"; 
         ctx.textBaseline = "top";
         ctx.fillText(text, x1 + padding, labelY + (padding/2));
       });
     } else if (canvas) {
+        // Clear canvas if no predictions
         const ctx = canvas.getContext("2d");
         ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
@@ -187,15 +212,12 @@ function App() {
               src={imageSrc}
               alt="Preview"
               className="preview-image"
-              onLoad={() => {
-                  // Trigger re-render to draw canvas
-                  setPredictions([...predictions]);
-              }}
+              // Crucial: Wait for image to load before drawing
+              onLoad={() => setPredictions([...predictions])}
             />
             <canvas ref={canvasRef} className="drawing-canvas" />
           </div>
           
-          {/* Stats Section */}
           {!loading && predictions.length > 0 && (
             <div className="stats-panel">
                <h3>Detected Items ({predictions.length})</h3>
